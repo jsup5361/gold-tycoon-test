@@ -299,6 +299,33 @@
     color: #b8956a;
   }
 
+  /* ===== 导入导出按钮 ===== */
+  .io-bar {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 1rem;
+  }
+
+  .io-btn {
+    padding: 0.3rem 0.9rem;
+    border: 1px solid rgba(180, 140, 90, 0.15);
+    border-radius: 30px;
+    background: transparent;
+    color: #6a5a48;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    opacity: 0.35;
+  }
+
+  .io-btn:hover {
+    background: rgba(180, 140, 90, 0.08);
+    border-color: rgba(180, 140, 90, 0.3);
+    opacity: 1;
+    color: #b8956a;
+  }
+
   /* ===== 欢迎回来弹窗 ===== */
   .welcome-overlay {
     position: fixed;
@@ -742,6 +769,12 @@
   <div class="title-badge" id="titleBadge">🏠 小作坊</div>
 
   <button class="reset-btn" id="resetBtn">🔄 重置游戏</button>
+
+  <div class="io-bar">
+    <button class="io-btn" id="exportBtn">📤 导出存档</button>
+    <button class="io-btn" id="importBtn">📥 导入存档</button>
+    <input type="file" id="importFile" accept=".json" style="display:none">
+  </div>
 </div>
 
 <script>
@@ -1144,6 +1177,60 @@
       coinCountEl.textContent = '0';
       updateUI();
     }
+  });
+
+  // ===== 导入导出 =====
+  document.getElementById('exportBtn').addEventListener('click', () => {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (!raw) {
+      alert('没有存档可导出，先玩一会儿吧！');
+      return;
+    }
+    const blob = new Blob([raw], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'clicker-save-' + new Date().toISOString().slice(0,10) + '.json';
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+
+  document.getElementById('importBtn').addEventListener('click', () => {
+    document.getElementById('importFile').click();
+  });
+
+  document.getElementById('importFile').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const data = JSON.parse(ev.target.result);
+        // 基本校验
+        if (data.coins === undefined || !data.counts) {
+          alert('存档文件格式不正确');
+          return;
+        }
+        // 导入时重置时间戳，避免虚假离线收益
+        data.timestamp = Date.now();
+        localStorage.setItem(SAVE_KEY, JSON.stringify(data));
+        // 重新加载
+        coins = 0;
+        totalEarned = 0;
+        unlocked = [];
+        for (let i = 0; i < counts.length; i++) counts[i] = 0;
+        loadGame();
+        updateUI();
+        checkAchievements().forEach(a => { showAchievementPopup(a); playAchievementSound(); });
+        renderAchievements();
+        alert('存档导入成功！');
+      } catch (err) {
+        alert('存档文件解析失败，请检查文件内容');
+      }
+    };
+    reader.readAsText(file);
+    // 清空 input 以便重复导入同一文件
+    e.target.value = '';
   });
 </script>
 
