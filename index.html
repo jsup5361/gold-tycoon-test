@@ -1,0 +1,1151 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>💰 金库点击器</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', system-ui, -apple-system, sans-serif;
+    background: radial-gradient(ellipse at 50% 30%, #2d241c 0%, #1a1512 60%, #0f0d0b 100%);
+    user-select: none;
+    -webkit-user-select: none;
+    padding: 1rem;
+  }
+
+  .container {
+    text-align: center;
+    padding: 2rem 1.5rem;
+    max-width: 580px;
+    width: 100%;
+    background: rgba(34, 27, 22, 0.7);
+    border: 1px solid rgba(245, 166, 35, 0.15);
+    border-radius: 40px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6), inset 0 1px 0 rgba(245, 166, 35, 0.06);
+    backdrop-filter: blur(6px);
+  }
+
+  /* ===== 金币显示 ===== */
+  .coin-display {
+    font-size: 4rem;
+    font-weight: 800;
+    color: #f5c542;
+    margin-bottom: 0.4rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-width: 200px;
+    text-shadow: 0 0 30px rgba(245, 166, 35, 0.25), 0 2px 4px rgba(0,0,0,0.5);
+    font-variant-numeric: tabular-nums;
+    height: 5rem;
+    line-height: 5rem;
+  }
+
+  .coin-icon {
+    display: inline-block;
+    width: 44px;
+    height: 44px;
+    flex-shrink: 0;
+  }
+
+  #coinCount {
+    display: inline-block;
+    min-width: 80px;
+    text-align: left;
+  }
+
+  /* ===== 每秒总收入 ===== */
+  .total-income {
+    font-size: 1.05rem;
+    color: #b8956a;
+    margin-bottom: 1.4rem;
+    letter-spacing: 1px;
+    font-weight: 500;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.4);
+  }
+
+  .total-income .num {
+    color: #f5c542;
+    font-weight: 700;
+  }
+
+  /* ===== 大按钮 ===== */
+  .click-btn {
+    width: 180px;
+    height: 180px;
+    border: none;
+    border-radius: 50%;
+    background: radial-gradient(circle at 38% 32%, #ffd700, #f5a623 40%, #c67b0e 80%, #a05f0a 100%);
+    box-shadow:
+      0 0 40px rgba(245, 166, 35, 0.25),
+      0 8px 32px rgba(0, 0, 0, 0.5),
+      inset 0 -8px 16px rgba(0, 0, 0, 0.25),
+      inset 0 6px 12px rgba(255, 255, 200, 0.4);
+    color: #fff;
+    font-size: 1.5rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1),
+                box-shadow 0.15s ease;
+    position: relative;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+    letter-spacing: 2px;
+  }
+
+  .click-btn:hover {
+    box-shadow:
+      0 0 60px rgba(245, 166, 35, 0.35),
+      0 8px 32px rgba(0, 0, 0, 0.5),
+      inset 0 -8px 16px rgba(0, 0, 0, 0.25),
+      inset 0 6px 12px rgba(255, 255, 200, 0.4);
+    transform: scale(1.03);
+  }
+
+  .click-btn:active {
+    transform: scale(0.92);
+    box-shadow:
+      0 0 20px rgba(245, 166, 35, 0.15),
+      0 2px 8px rgba(0, 0, 0, 0.4),
+      inset 0 -4px 8px rgba(0, 0, 0, 0.3),
+      inset 0 4px 8px rgba(255, 255, 200, 0.2);
+  }
+
+  /* ===== 升级卡片网格 ===== */
+  .upgrade-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-top: 1.4rem;
+  }
+
+  .upgrade-card {
+    background: rgba(40, 32, 26, 0.75);
+    backdrop-filter: blur(4px);
+    border-radius: 18px;
+    padding: 0.9rem 0.8rem 0.8rem;
+    border: 1.5px solid rgba(180, 140, 90, 0.2);
+    cursor: pointer;
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
+                box-shadow 0.25s ease,
+                border-color 0.25s ease,
+                background 0.25s ease;
+    text-align: left;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .upgrade-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 18px;
+    opacity: 0;
+    transition: opacity 0.25s ease;
+    pointer-events: none;
+  }
+
+  .upgrade-card.affordable:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 28px rgba(0,0,0,0.5), 0 0 20px rgba(245, 166, 35, 0.08);
+    border-color: rgba(245, 166, 35, 0.4);
+    background: rgba(50, 40, 32, 0.85);
+  }
+
+  .upgrade-card:active:not(.disabled) {
+    transform: scale(0.96) !important;
+  }
+
+  .upgrade-card.affordable {
+    border-color: rgba(245, 166, 35, 0.3);
+  }
+
+  .upgrade-card.disabled {
+    border-color: rgba(100, 90, 80, 0.2);
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+
+  /* 购买成功绿色闪卡 */
+  .upgrade-card.flash-buy {
+    animation: cardFlash 0.45s ease-out forwards;
+  }
+
+  @keyframes cardFlash {
+    0%   { background: rgba(86, 197, 104, 0.25); border-color: #56c568; }
+    100% { background: rgba(40, 32, 26, 0.75); border-color: rgba(245, 166, 35, 0.3); }
+  }
+
+  .upgrade-card .card-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #e8d5b8;
+    margin-bottom: 5px;
+  }
+
+  .upgrade-card .card-header .emoji {
+    font-size: 1.4rem;
+    line-height: 1;
+  }
+
+  .upgrade-card .card-stats {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-size: 0.82rem;
+    color: #a08870;
+    margin-bottom: 7px;
+  }
+
+  .upgrade-card .card-stats .owned-num {
+    color: #f5c542;
+    font-weight: 700;
+  }
+
+  .upgrade-card .card-stats .prod-num {
+    color: #f5c542;
+    font-weight: 700;
+  }
+
+  .upgrade-card .card-price {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #e8d5b8;
+    padding: 0.15rem 0.7rem;
+    border-radius: 30px;
+    background: rgba(0,0,0,0.25);
+    border: 1px solid rgba(245, 166, 35, 0.12);
+  }
+
+  .upgrade-card .card-price .svg-inline {
+    width: 15px;
+    height: 15px;
+  }
+
+  .upgrade-card .card-price .price-num {
+    font-weight: 700;
+  }
+
+  /* ===== 点击特效 ===== */
+  .float-text {
+    position: fixed;
+    pointer-events: none;
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #ffd700;
+    text-shadow: 0 0 20px rgba(255, 215, 0, 0.5), 0 2px 8px rgba(0,0,0,0.5);
+    animation: floatUp 0.9s ease-out forwards;
+    z-index: 999;
+  }
+
+  @keyframes floatUp {
+    0%   { opacity: 1; transform: translateY(0) scale(0.5); }
+    30%  { opacity: 1; transform: translateY(-20px) scale(1.3); }
+    100% { opacity: 0; transform: translateY(-90px) scale(1); }
+  }
+
+  .ripple {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3);
+    transform: scale(0);
+    animation: rippleAnim 0.55s ease-out forwards;
+    pointer-events: none;
+  }
+
+  @keyframes rippleAnim {
+    to { transform: scale(3); opacity: 0; }
+  }
+
+  /* ===== 底部文案 ===== */
+  .sub-text {
+    margin-top: 1rem;
+    font-size: 0.85rem;
+    color: #8a7a68;
+    letter-spacing: 2px;
+    opacity: 0.5;
+  }
+
+  /* ===== 重置按钮 ===== */
+  .reset-btn {
+    margin-top: 0.8rem;
+    padding: 0.35rem 1rem;
+    border: 1px solid rgba(180, 140, 90, 0.2);
+    border-radius: 30px;
+    background: transparent;
+    color: #7a6a58;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    opacity: 0.4;
+  }
+
+  .reset-btn:hover {
+    background: rgba(180, 140, 90, 0.08);
+    border-color: rgba(180, 140, 90, 0.35);
+    opacity: 1;
+    color: #b8956a;
+  }
+
+  /* ===== 欢迎回来弹窗 ===== */
+  .welcome-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+    animation: fadeIn 0.3s ease;
+    padding: 1rem;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+
+  .welcome-modal {
+    background: linear-gradient(160deg, #2d241c, #1a1512);
+    border: 1px solid rgba(245, 166, 35, 0.2);
+    border-radius: 28px;
+    padding: 2rem 2.2rem;
+    max-width: 380px;
+    width: 100%;
+    text-align: center;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.6), 0 0 40px rgba(245, 166, 35, 0.05);
+    animation: modalPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  @keyframes modalPop {
+    0%   { transform: scale(0.5); opacity: 0; }
+    100% { transform: scale(1);   opacity: 1; }
+  }
+
+  .welcome-modal .big-emoji {
+    font-size: 3rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .welcome-modal h2 {
+    font-size: 1.4rem;
+    color: #f5c542;
+    margin-bottom: 0.4rem;
+    font-weight: 700;
+  }
+
+  .welcome-modal p {
+    font-size: 0.95rem;
+    color: #b8956a;
+    line-height: 1.6;
+  }
+
+  .welcome-modal .earned-highlight {
+    font-size: 2rem;
+    font-weight: 800;
+    color: #ffd700;
+    margin: 0.5rem 0;
+    text-shadow: 0 0 20px rgba(255, 215, 0, 0.2);
+  }
+
+  .welcome-modal .earned-highlight svg {
+    vertical-align: middle;
+  }
+
+  .welcome-modal .dismiss-btn {
+    margin-top: 1rem;
+    padding: 0.65rem 2.4rem;
+    border: none;
+    border-radius: 50px;
+    background: linear-gradient(135deg, #f5a623, #d4880f);
+    color: #fff;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 4px 20px rgba(212, 136, 15, 0.3);
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
+  }
+
+  .welcome-modal .dismiss-btn:active {
+    transform: scale(0.95);
+    box-shadow: 0 2px 10px rgba(212, 136, 15, 0.2);
+  }
+
+  /* ===== 称号徽章 ===== */
+  .title-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #e8d5b8;
+    background: rgba(245, 166, 35, 0.06);
+    border: 1px solid rgba(245, 166, 35, 0.12);
+    border-radius: 30px;
+    padding: 0.25rem 1rem;
+    margin-bottom: 1rem;
+    letter-spacing: 0.5px;
+    transition: all 0.3s ease;
+  }
+
+  /* ===== 成就系统 ===== */
+  .achievements-section {
+    margin-top: 1.2rem;
+    border-top: 1px solid rgba(245, 166, 35, 0.08);
+    padding-top: 1rem;
+  }
+
+  .achievements-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #b8956a;
+    cursor: pointer;
+    padding: 0.3rem 0;
+    transition: color 0.2s;
+    letter-spacing: 1px;
+    user-select: none;
+  }
+
+  .achievements-header:hover {
+    color: #e8d5b8;
+  }
+
+  .achievements-header .ach-progress {
+    color: #f5c542;
+    font-weight: 700;
+  }
+
+  .achievements-header .toggle-arrow {
+    font-size: 0.7rem;
+    transition: transform 0.25s ease;
+  }
+
+  .achievements-header .toggle-arrow.open {
+    transform: rotate(180deg);
+  }
+
+  .achievements-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-top: 0.6rem;
+    overflow: hidden;
+    max-height: 0;
+    opacity: 0;
+    transition: max-height 0.35s ease, opacity 0.3s ease, margin 0.3s ease;
+    margin-top: 0;
+  }
+
+  .achievements-grid.open {
+    max-height: 400px;
+    opacity: 1;
+    margin-top: 0.6rem;
+  }
+
+  .ach-card {
+    border-radius: 14px;
+    padding: 0.7rem 0.5rem;
+    text-align: center;
+    border: 1.5px solid;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .ach-card.unlocked {
+    background: rgba(245, 166, 35, 0.08);
+    border-color: rgba(245, 166, 35, 0.3);
+    box-shadow: 0 0 12px rgba(245, 166, 35, 0.06);
+  }
+
+  .ach-card.locked {
+    background: rgba(40, 32, 26, 0.5);
+    border-color: rgba(100, 90, 80, 0.15);
+    opacity: 0.5;
+  }
+
+  .ach-card .ach-emoji {
+    font-size: 1.5rem;
+    display: block;
+    margin-bottom: 2px;
+  }
+
+  .ach-card.locked .ach-emoji {
+    filter: grayscale(1);
+    opacity: 0.5;
+  }
+
+  .ach-card .ach-name {
+    font-size: 0.75rem;
+    font-weight: 600;
+    display: block;
+  }
+
+  .ach-card.unlocked .ach-name {
+    color: #f5c542;
+  }
+
+  .ach-card.locked .ach-name {
+    color: #7a6a58;
+  }
+
+  .ach-card .ach-desc {
+    font-size: 0.65rem;
+    color: #8a7a68;
+    display: block;
+    margin-top: 2px;
+  }
+
+  .ach-card.unlocked .ach-desc {
+    color: #b8956a;
+  }
+
+  /* 成就解锁弹窗 */
+  .ach-unlock-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 99999;
+    animation: fadeIn 0.25s ease;
+    padding: 1rem;
+  }
+
+  .ach-unlock-modal {
+    background: linear-gradient(160deg, #2d241c, #1a1512);
+    border: 1.5px solid rgba(245, 166, 35, 0.3);
+    border-radius: 28px;
+    padding: 2rem 2.2rem;
+    max-width: 340px;
+    width: 100%;
+    text-align: center;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.6), 0 0 60px rgba(245, 166, 35, 0.08);
+    animation: modalPop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .ach-unlock-modal .ach-big-emoji {
+    font-size: 3.5rem;
+    margin-bottom: 0.3rem;
+    display: block;
+  }
+
+  .ach-unlock-modal .ach-label {
+    font-size: 0.8rem;
+    color: #b8956a;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+
+  .ach-unlock-modal h2 {
+    font-size: 1.3rem;
+    color: #ffd700;
+    margin: 0.2rem 0 0.4rem;
+    font-weight: 800;
+  }
+
+  .ach-unlock-modal p {
+    font-size: 0.9rem;
+    color: #a08870;
+    margin-bottom: 0.2rem;
+  }
+
+  .ach-unlock-modal .dismiss-btn {
+    margin-top: 1rem;
+    padding: 0.6rem 2.2rem;
+    border: none;
+    border-radius: 50px;
+    background: linear-gradient(135deg, #f5a623, #d4880f);
+    color: #fff;
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 4px 20px rgba(212, 136, 15, 0.3);
+    transition: transform 0.12s ease;
+  }
+
+  .ach-unlock-modal .dismiss-btn:active {
+    transform: scale(0.95);
+  }
+
+  /* ===== 音效开关 ===== */
+  .sound-toggle {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    width: 36px;
+    height: 36px;
+    border: 1px solid rgba(245, 166, 35, 0.15);
+    border-radius: 50%;
+    background: rgba(34, 27, 22, 0.6);
+    color: #b8956a;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(4px);
+    z-index: 10;
+  }
+
+  .sound-toggle:hover {
+    border-color: rgba(245, 166, 35, 0.3);
+    color: #f5c542;
+  }
+
+  /* ===== 响应式 ===== */
+  @media (max-width: 500px) {
+    .container {
+      padding: 1.4rem 1rem;
+      border-radius: 28px;
+    }
+
+    .coin-display {
+      font-size: 2.8rem;
+      height: 3.6rem;
+      line-height: 3.6rem;
+    }
+
+    .coin-icon { width: 32px; height: 32px; }
+
+    .click-btn {
+      width: 150px;
+      height: 150px;
+      font-size: 1.2rem;
+    }
+
+    .click-btn span[style] { font-size: 1.8rem !important; }
+
+    .upgrade-grid {
+      gap: 8px;
+      margin-top: 1rem;
+    }
+
+    .upgrade-card {
+      padding: 0.7rem 0.6rem 0.6rem;
+      border-radius: 14px;
+    }
+
+    .upgrade-card .card-header {
+      font-size: 0.9rem;
+    }
+
+    .upgrade-card .card-header .emoji {
+      font-size: 1.2rem;
+    }
+
+    .upgrade-card .card-stats {
+      font-size: 0.75rem;
+    }
+
+    .upgrade-card .card-price {
+      font-size: 0.85rem;
+      padding: 0.1rem 0.6rem;
+    }
+
+    .total-income {
+      font-size: 0.9rem;
+      margin-bottom: 1rem;
+    }
+
+    .welcome-modal {
+      padding: 1.5rem 1.5rem;
+    }
+
+    .welcome-modal .earned-highlight {
+      font-size: 1.5rem;
+    }
+
+    .achievements-grid {
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+    }
+
+    .ach-card { padding: 0.5rem 0.3rem; }
+    .ach-card .ach-emoji { font-size: 1.2rem; }
+    .ach-card .ach-name { font-size: 0.65rem; }
+    .ach-card .ach-desc { font-size: 0.6rem; }
+  }
+
+  @media (max-width: 380px) {
+    .coin-display { font-size: 2.2rem; height: 3rem; line-height: 3rem; }
+    .click-btn { width: 130px; height: 130px; font-size: 1rem; }
+    .container { padding: 1rem 0.8rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container" style="position:relative">
+  <!-- 音效开关 -->
+  <button class="sound-toggle" id="soundToggle">🔊</button>
+  <!-- 金币显示 -->
+  <div class="coin-display">
+    <svg class="coin-icon" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="32" cy="32" r="28" fill="url(#coinGrad)" stroke="#c67b0e" stroke-width="1.5"/>
+      <circle cx="32" cy="32" r="22" fill="none" stroke="rgba(255,255,200,0.15)" stroke-width="2"/>
+      <circle cx="22" cy="22" r="8" fill="rgba(255,255,200,0.1)"/>
+      <text x="32" y="40" text-anchor="middle" font-size="22" font-weight="700" fill="#a0680a">$</text>
+      <defs>
+        <radialGradient id="coinGrad" cx="40%" cy="35%" r="65%">
+          <stop offset="0%"   stop-color="#ffec8b"/>
+          <stop offset="25%"  stop-color="#ffd700"/>
+          <stop offset="65%"  stop-color="#f5a623"/>
+          <stop offset="100%" stop-color="#c67b0e"/>
+        </radialGradient>
+      </defs>
+    </svg>
+    <span id="coinCount">0</span>
+  </div>
+
+  <!-- 每秒总收入 -->
+  <div class="total-income">⚡ 每秒收入 <span class="num" id="totalIncome">0</span></div>
+
+  <!-- 金色大按钮 -->
+  <button class="click-btn" id="clickBtn">
+    <span style="display:block; font-size:2rem; margin-bottom:3px;">💰</span>
+    点击赚钱
+  </button>
+
+  <!-- 升级卡片网格 -->
+  <div class="upgrade-grid" id="upgradeGrid"></div>
+
+  <!-- 成就系统 -->
+  <div class="achievements-section">
+    <div class="achievements-header" id="achToggle">
+      🏆 成就 <span class="ach-progress" id="achProgress">0/6</span>
+      <span class="toggle-arrow" id="achArrow">▾</span>
+    </div>
+    <div class="achievements-grid" id="achGrid"></div>
+  </div>
+
+  <div class="sub-text">✦ 每点一下 · 多一枚金币 ✦</div>
+
+  <!-- 称号 -->
+  <div class="title-badge" id="titleBadge">🏠 小作坊</div>
+
+  <button class="reset-btn" id="resetBtn">🔄 重置游戏</button>
+</div>
+
+<script>
+  // ===== 数据 =====
+  const UPGRADES = [
+    { id: 'miner',     emoji: '⛏️', name: '矿工',     basePrice: 10,    prod: 1   },
+    { id: 'cart',      emoji: '🛒', name: '矿车',     basePrice: 100,   prod: 8   },
+    { id: 'mine',      emoji: '⛰️', name: '金矿',     basePrice: 1000,  prod: 50  },
+    { id: 'magicMine', emoji: '✨', name: '魔法金矿', basePrice: 10000, prod: 300 },
+  ];
+
+  let coins = 0;
+  const counts = UPGRADES.map(() => 0);
+
+  let animatingCoins = false;
+  let lastDisplayedCoins = 0;
+  let totalEarned = 0;
+  let unlocked = [];  // 存储已解锁成就的 id
+
+  // DOM 引用
+  const coinCountEl = document.getElementById('coinCount');
+  const btn = document.getElementById('clickBtn');
+  const totalIncomeEl = document.getElementById('totalIncome');
+  const gridEl = document.getElementById('upgradeGrid');
+  const titleBadgeEl = document.getElementById('titleBadge');
+  const achGrid = document.getElementById('achGrid');
+  const achProgress = document.getElementById('achProgress');
+  const achToggle = document.getElementById('achToggle');
+  const achArrow = document.getElementById('achArrow');
+
+  // ===== 音效系统 =====
+  let soundEnabled = true;
+  const soundToggleEl = document.getElementById('soundToggle');
+  let audioCtx = null;
+
+  function getAudioCtx() {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    return audioCtx;
+  }
+
+  function playTone(freq, duration, type, volume) {
+    if (!soundEnabled) return;
+    try {
+      const ctx = getAudioCtx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = type || 'sine';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime((volume || 0.3) * 0.3, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + duration);
+    } catch (e) { /* 静默 */ }
+  }
+
+  function playClickSound() {
+    playTone(1200, 0.1, 'sine', 0.3);
+    // 加一点泛音更清脆
+    playTone(1800, 0.06, 'sine', 0.12);
+  }
+
+  function playBuySound() {
+    playTone(400, 0.15, 'triangle', 0.3);
+    // 低沉尾音像金币入袋
+    setTimeout(() => playTone(250, 0.1, 'triangle', 0.2), 60);
+  }
+
+  function playAchievementSound() {
+    // 上升旋律 噔噔噔
+    playTone(523, 0.15, 'sine', 0.25);  // C5
+    setTimeout(() => playTone(659, 0.15, 'sine', 0.25), 120); // E5
+    setTimeout(() => playTone(784, 0.15, 'sine', 0.25), 240); // G5
+    setTimeout(() => playTone(1047, 0.25, 'sine', 0.25), 360); // C6
+  }
+
+  soundToggleEl.addEventListener('click', () => {
+    soundEnabled = !soundEnabled;
+    soundToggleEl.textContent = soundEnabled ? '🔊' : '🔇';
+    // 点击开关时试响一下
+    if (soundEnabled) playClickSound();
+  });
+
+  // ===== 工具函数 =====
+  function getPrice(idx) {
+    return UPGRADES[idx].basePrice * Math.pow(2, counts[idx]);
+  }
+
+  function formatPrice(n) {
+    if (n >= 1000000) return (n / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
+    if (n >= 1000) return (n / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
+    return String(n);
+  }
+
+  function getTotalProd() {
+    let sum = 0;
+    for (let i = 0; i < UPGRADES.length; i++) sum += counts[i] * UPGRADES[i].prod;
+    return sum;
+  }
+
+  // ===== 称号系统 =====
+  function getTitle() {
+    const p = getTotalProd();
+    if (p >= 1000) return '👑 金币帝国';
+    if (p >= 100)  return '🏢 大型企业';
+    if (p >= 10)   return '🏭 小型工厂';
+    return '🏠 小作坊';
+  }
+
+  // ===== 成就系统 =====
+  const ACHIEVEMENTS = [
+    { id: 'first100',      emoji: '🥉', name: '第一桶金',   desc: '累计赚 100 金币',      check: () => totalEarned >= 100 },
+    { id: 'saved10k',      emoji: '🥈', name: '小有积蓄',   desc: '累计赚 10K 金币',      check: () => totalEarned >= 10000 },
+    { id: 'millionaire',   emoji: '🥇', name: '百万富翁',   desc: '累计赚 1M 金币',       check: () => totalEarned >= 1000000 },
+    { id: 'minerLeader',   emoji: '⛏️', name: '矿工队长',   desc: '拥有 50 名矿工',       check: () => counts[0] >= 50 },
+    { id: 'moneyPrinter',  emoji: '💰', name: '印钞机',     desc: '每秒收入达 1,000',     check: () => getTotalProd() >= 1000 },
+    { id: 'allRounder',    emoji: '🎯', name: '全能投资家', desc: '拥有全部 4 种升级',   check: () => counts.every(c => c >= 1) },
+  ];
+
+  function isUnlocked(id) { return unlocked.includes(id); }
+
+  function checkAchievements() {
+    const newly = [];
+    ACHIEVEMENTS.forEach(a => {
+      if (!isUnlocked(a.id) && a.check()) {
+        unlocked.push(a.id);
+        newly.push(a);
+      }
+    });
+    return newly;
+  }
+
+  function showAchievementPopup(ach) {
+    const overlay = document.createElement('div');
+    overlay.className = 'ach-unlock-overlay';
+    overlay.innerHTML = `
+      <div class="ach-unlock-modal">
+        <span class="ach-big-emoji">${ach.emoji}</span>
+        <div class="ach-label">✦ 成就解锁 ✦</div>
+        <h2>${ach.name}</h2>
+        <p>${ach.desc}</p>
+        <button class="dismiss-btn" id="achDismiss">太棒了！</button>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+    overlay.querySelector('#achDismiss').addEventListener('click', () => overlay.remove());
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+  }
+
+  function renderAchievements() {
+    achGrid.innerHTML = '';
+    ACHIEVEMENTS.forEach(a => {
+      const card = document.createElement('div');
+      const u = isUnlocked(a.id);
+      card.className = 'ach-card ' + (u ? 'unlocked' : 'locked');
+      card.innerHTML = `<span class="ach-emoji">${a.emoji}</span><span class="ach-name">${a.name}</span><span class="ach-desc">${a.desc}</span>`;
+      achGrid.appendChild(card);
+    });
+    const done = unlocked.length;
+    achProgress.textContent = done + '/' + ACHIEVEMENTS.length;
+  }
+
+  // 成就区域折叠
+  let achOpen = false;
+  achToggle.addEventListener('click', () => {
+    achOpen = !achOpen;
+    achGrid.classList.toggle('open', achOpen);
+    achArrow.classList.toggle('open', achOpen);
+  });
+
+  // ===== 数字滚动动画 =====
+  function animateCoins(target) {
+    const start = lastDisplayedCoins;
+    if (start === target) return;
+    lastDisplayedCoins = target;
+    const duration = 120;
+    const startTime = performance.now();
+    animatingCoins = true;
+
+    function step(now) {
+      const p = Math.min((now - startTime) / duration, 1);
+      // easeOutCubic
+      const eased = 1 - Math.pow(1 - p, 3);
+      const current = Math.round(start + (target - start) * eased);
+      coinCountEl.textContent = current;
+      if (p < 1) {
+        requestAnimationFrame(step);
+      } else {
+        coinCountEl.textContent = target;
+        animatingCoins = false;
+      }
+    }
+    requestAnimationFrame(step);
+  }
+
+  // ===== 渲染卡片 =====
+  function renderCards() {
+    gridEl.innerHTML = '';
+    UPGRADES.forEach((u, i) => {
+      const price = getPrice(i);
+      const canAfford = coins >= price;
+      const owned = counts[i];
+      const prod = owned * u.prod;
+
+      const card = document.createElement('div');
+      card.className = 'upgrade-card' + (canAfford ? ' affordable' : ' disabled');
+      card.dataset.idx = i;
+
+      card.innerHTML = `
+        <div class="card-header">
+          <span class="emoji">${u.emoji}</span>
+          ${u.name}
+        </div>
+        <div class="card-stats">
+          <span>拥有 <span class="owned-num">${owned}</span></span>
+          <span>⚡ <span class="prod-num">${prod}</span>/秒</span>
+        </div>
+        <div class="card-price">
+          <svg class="svg-inline" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="32" cy="32" r="28" fill="#f5a623" stroke="#b8730e" stroke-width="1.5"/>
+            <circle cx="32" cy="32" r="22" fill="none" stroke="rgba(255,255,200,0.25)" stroke-width="2"/>
+            <text x="32" y="40" text-anchor="middle" font-size="22" font-weight="700" fill="#a0680a">$</text>
+          </svg>
+          <span class="price-num">${formatPrice(price)}</span>
+        </div>
+      `;
+
+      card.addEventListener('click', () => buyUpgrade(i));
+      gridEl.appendChild(card);
+    });
+  }
+
+  // ===== 购买 =====
+  function buyUpgrade(idx) {
+    const price = getPrice(idx);
+    if (coins < price) return;
+    coins -= price;
+    counts[idx]++;
+    updateUI();
+    playBuySound();
+
+    // 绿色闪卡
+    const cards = gridEl.children;
+    if (cards[idx]) {
+      cards[idx].classList.remove('flash-buy');
+      void cards[idx].offsetWidth;
+      cards[idx].classList.add('flash-buy');
+    }
+  }
+
+  // ===== 更新 UI =====
+  function updateUI() {
+    totalIncomeEl.textContent = getTotalProd();
+    titleBadgeEl.textContent = getTitle();
+    renderCards();
+    renderAchievements();
+  }
+
+  // ===== 点击主按钮 =====
+  btn.addEventListener('click', function (e) {
+    coins++;
+    totalEarned++;
+    animateCoins(coins);
+    playClickSound();
+    updateUI();
+
+    // 检查成就
+    const newly = checkAchievements();
+    newly.forEach(a => { showAchievementPopup(a); playAchievementSound(); });
+
+    // 波纹
+    const rect = btn.getBoundingClientRect();
+    const rippleSize = Math.max(rect.width, rect.height);
+    const ripple = document.createElement('span');
+    ripple.className = 'ripple';
+    const x = (e.clientX - rect.left) - rippleSize / 2;
+    const y = (e.clientY - rect.top) - rippleSize / 2;
+    ripple.style.width = ripple.style.height = rippleSize + 'px';
+    ripple.style.left = x + 'px';
+    ripple.style.top = y + 'px';
+    btn.appendChild(ripple);
+    ripple.addEventListener('animationend', () => ripple.remove());
+
+    // 飘字
+    const float = document.createElement('div');
+    float.className = 'float-text';
+    float.textContent = '+1 ✨';
+    float.style.left = (e.clientX - 25 + (Math.random() - 0.5) * 60) + 'px';
+    float.style.top = (e.clientY - 10) + 'px';
+    document.body.appendChild(float);
+    float.addEventListener('animationend', () => float.remove());
+  });
+
+  // ===== 自动生产 =====
+  setInterval(() => {
+    const prod = getTotalProd();
+    if (prod > 0) {
+      coins += prod;
+      totalEarned += prod;
+      animateCoins(coins);
+      updateUI();
+      // 检查成就
+      const newly = checkAchievements();
+      newly.forEach(a => { showAchievementPopup(a); playAchievementSound(); });
+    }
+  }, 1000);
+
+  // ===== 启动 =====
+  renderCards();
+
+  // ===== 存档系统 =====
+  const SAVE_KEY = 'clickerGameSave';
+
+  function saveGame() {
+    try {
+      localStorage.setItem(SAVE_KEY, JSON.stringify({
+        coins,
+        counts: [...counts],
+        totalEarned,
+        unlocked,
+        soundEnabled,
+        timestamp: Date.now()
+      }));
+    } catch (e) { /* 静默 */ }
+  }
+
+  function showWelcomeBack(timeStr, earned) {
+    const overlay = document.createElement('div');
+    overlay.className = 'welcome-overlay';
+    overlay.innerHTML = `
+      <div class="welcome-modal">
+        <div class="big-emoji">🎉</div>
+        <h2>欢迎回来！</h2>
+        <p>你离开了 <strong>${timeStr}</strong></p>
+        <div class="earned-highlight">+${formatPrice(earned)} <svg style="width:28px;height:28px" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="28" fill="#f5a623" stroke="#b8730e" stroke-width="1.5"/><circle cx="32" cy="32" r="22" fill="none" stroke="rgba(255,255,200,0.25)" stroke-width="2"/><text x="32" y="40" text-anchor="middle" font-size="22" font-weight="700" fill="#a0680a">$</text></svg></div>
+        <p>离线期间矿工们一刻也没闲着！</p>
+        <button class="dismiss-btn" id="dismissBtn">太棒了！</button>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+    overlay.querySelector('#dismissBtn').addEventListener('click', () => overlay.remove());
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+  }
+
+  function loadGame() {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (!raw) return;
+    try {
+      const data = JSON.parse(raw);
+      coins = data.coins || 0;
+      totalEarned = data.totalEarned || 0;
+      if (data.unlocked) unlocked = data.unlocked;
+      if (data.soundEnabled !== undefined) {
+        soundEnabled = data.soundEnabled;
+        soundToggleEl.textContent = soundEnabled ? '🔊' : '🔇';
+      }
+      if (data.counts) {
+        data.counts.forEach((c, i) => { if (i < counts.length) counts[i] = c; });
+      }
+      lastDisplayedCoins = coins;
+      coinCountEl.textContent = coins;
+
+      const lastTime = data.timestamp || Date.now();
+      const elapsed = Math.floor((Date.now() - lastTime) / 1000);
+      if (elapsed > 10) {
+        const prod = getTotalProd();
+        const earned = prod * elapsed;
+        if (earned > 0) {
+          coins += earned;
+          totalEarned += earned;
+          lastDisplayedCoins = coins;
+          coinCountEl.textContent = coins;
+          const mins = Math.floor(elapsed / 60);
+          const secs = elapsed % 60;
+          showWelcomeBack(mins > 0 ? `${mins} 分 ${secs} 秒` : `${secs} 秒`, earned);
+        }
+      }
+    } catch (e) { /* 忽略 */ }
+  }
+
+  loadGame();
+  updateUI();
+  // 加载后检查是否有已满足条件的成就
+  checkAchievements().forEach(a => { showAchievementPopup(a); playAchievementSound(); });
+  renderAchievements();
+
+  setInterval(saveGame, 10000);
+  window.addEventListener('beforeunload', saveGame);
+
+  document.getElementById('resetBtn').addEventListener('click', () => {
+    if (confirm('确定要重置游戏吗？所有进度将会丢失！')) {
+      localStorage.removeItem(SAVE_KEY);
+      coins = 0;
+      totalEarned = 0;
+      unlocked = [];
+      lastDisplayedCoins = 0;
+      for (let i = 0; i < counts.length; i++) counts[i] = 0;
+      coinCountEl.textContent = '0';
+      updateUI();
+    }
+  });
+</script>
+
+</body>
+</html>
